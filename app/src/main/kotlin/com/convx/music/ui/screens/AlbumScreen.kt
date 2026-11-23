@@ -224,6 +224,7 @@ fun AlbumScreen(
 
     val playlistId by viewModel.playlistId.collectAsState()
     val albumWithSongs by viewModel.albumWithSongs.collectAsState()
+    val loadFailed by viewModel.loadFailed.collectAsState()
     val artistSignatureUrl by viewModel.artistSignatureUrl.collectAsState()
     val artistBundledLogo by viewModel.artistBundledLogo.collectAsState()
     val otherVersions by viewModel.otherVersions.collectAsState()
@@ -338,10 +339,9 @@ fun AlbumScreen(
     val heroTopBlurProgress = rememberHeroTopBlur(lazyListState)
     val chrome = com.convx.music.ui.component.rememberDetailChromeEntrance(iconCount = 2)
 
-    val instantThumbUrl = viewModel.thumbArg
+    val bgUrl = albumWithSongs?.album?.thumbnailUrl?.takeIf { it.isNotBlank() }
+        ?: viewModel.thumbArg
         ?: pendingSharedArtworkThumbFor(viewModel.albumId)
-        ?: albumWithSongs?.album?.thumbnailUrl
-    val bgUrl = instantThumbUrl ?: albumWithSongs?.album?.thumbnailUrl
 
     // Apple Music colours, unified with the artist page: Apple's server-computed bgColor
     // through pageBackground (99% path); unmatched albums fall back to the on-device
@@ -426,7 +426,7 @@ fun AlbumScreen(
                 com.convx.music.ui.component.CollectionDetailHeader(
                     title = title,
                     subtitle = title,
-                    artwork = appleAlbum?.sized(1200) ?: instantThumbUrl ?: albumWithSongs.album.thumbnailUrl,
+                    artwork = bgUrl ?: appleAlbum?.sized(1200),
                     metadata = albumInfo,
                     description = description,
                     descriptionRuns = descriptionRuns?.map { LinkSegment(it.text, it.navigationEndpoint?.urlEndpoint?.url) },
@@ -642,6 +642,17 @@ fun AlbumScreen(
             item(key = "bottom_spacer") {
                 Spacer(Modifier.height(50.dp))
             }
+        } else if (loadFailed) {
+            item(key = "album_load_failed") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(top = 96.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.compose.material3.TextButton(onClick = viewModel::refresh) {
+                        Text(stringResource(R.string.retry), color = onTint)
+                    }
+                }
+            }
         } else {
             // Loading mirrors loaded: same hero size/offset/foot-fade/merge band on
             // the seeded bg, skeleton lines standing where title/artist/actions/
@@ -649,7 +660,7 @@ fun AlbumScreen(
             item(key = "shimmer_header", contentType = "header") {
                 com.convx.music.ui.component.CollectionDetailHeader(
                     title = com.convx.music.ui.utils.selectedArtworkTitle().orEmpty(),
-                    artwork = instantThumbUrl,
+                    artwork = bgUrl,
                     metadata = "",
                     foreground = onTint,
                     playing = false,

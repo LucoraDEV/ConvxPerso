@@ -105,12 +105,13 @@ internal object AlbumMapper {
     suspend fun album(innerTube: InnerTube, browseId: String, withSongs: Boolean): Result<AlbumPage> = catching {
         val response = innerTube.browse(WEB_REMIX, browseId, setLogin = true).body<BrowseResponse>()
         val page = parseAlbum(response, browseId)
-        val songs = when {
-            !withSongs -> emptyList()
-            page.songs.isNotEmpty() -> collectSongs(innerTube, response, page.album)
-            page.album.playlistId.isNotBlank() -> albumSongs(innerTube, page.album.playlistId, page.album).getOrThrow()
-            else -> error("Album tracks missing: $browseId")
+        if (!withSongs) return@catching page.copy(songs = emptyList())
+        val songs = collectSongs(innerTube, response, page.album, setLogin = true).ifEmpty {
+            val playlistId = page.album.playlistId
+            if (playlistId.isNotBlank()) albumSongs(innerTube, playlistId, page.album).getOrThrow()
+            else emptyList()
         }
+        check(songs.isNotEmpty()) { "Album tracks missing: $browseId" }
         page.copy(songs = songs)
     }
 
@@ -119,12 +120,17 @@ internal object AlbumMapper {
         collectSongs(innerTube, response, album)
     }
 
-    private suspend fun collectSongs(innerTube: InnerTube, response: BrowseResponse, album: AlbumItem?): List<SongItem> {
+    private suspend fun collectSongs(
+        innerTube: InnerTube,
+        response: BrowseResponse,
+        album: AlbumItem?,
+        setLogin: Boolean = false,
+    ): List<SongItem> {
         val songs = songContents(response).getItems().mapNotNull { AlbumPage.getSong(it, album) }.toMutableList()
         var next = continuation(response)
         val seen = mutableSetOf<String>()
         while (next != null && seen.size < 50 && seen.add(next)) {
-            val continued = innerTube.browse(client = WEB_REMIX, continuation = next).body<BrowseResponse>()
+            val continued = innerTube.browse(client = WEB_REMIX, continuation = next, setLogin = setLogin).body<BrowseResponse>()
             songs += songContents(continued).getItems().mapNotNull { AlbumPage.getSong(it, album) }
             next = continuation(continued)
         }

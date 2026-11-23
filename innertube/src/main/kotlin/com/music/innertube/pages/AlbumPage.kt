@@ -74,6 +74,12 @@ data class AlbumPage(
 
         fun getSong(renderer: MusicResponsiveListItemRenderer, album: AlbumItem? = null): SongItem? {
             val libraryTokens = PageHelper.extractLibraryTokensFromMenuItems(renderer.menu?.menuRenderer?.items)
+            val duration = renderer.fixedColumns?.firstOrNull()
+                ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
+                ?.text?.parseTime()
+                ?: renderer.flexColumns.drop(1).flatMap { it.musicResponsiveListItemFlexColumnRenderer.text?.runs.orEmpty() }
+                    .firstOrNull { it.text.matches(Regex("\\d+:\\d{2}(?::\\d{2})?")) }?.text?.parseTime()
+            if (duration == null && album == null) return null
 
             return SongItem(
                 id = renderer.playlistItemData?.videoId ?: renderer.navigationEndpoint?.watchEndpoint?.videoId
@@ -105,12 +111,7 @@ data class AlbumPage(
                         Album(name = run.text, id = browseId)
                     }
                 },
-                duration = renderer.fixedColumns?.firstOrNull()
-                    ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
-                    ?.text?.parseTime()
-                    ?: renderer.flexColumns.drop(1).flatMap { it.musicResponsiveListItemFlexColumnRenderer.text?.runs.orEmpty() }
-                        .firstOrNull { it.text.matches(Regex("\\d+:\\d{2}(?::\\d{2})?")) }?.text?.parseTime()
-                    ?: return null,
+                duration = duration,
                 musicVideoType = renderer.musicVideoType,
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl() ?: album?.thumbnail ?: return null,
                 explicit = renderer.badges?.find {

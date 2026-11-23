@@ -47,6 +47,21 @@ class AlbumMapperTest {
     }
 
     @Test
+    fun `album tracks can omit duration`() {
+        val track = """{"musicResponsiveListItemRenderer":{
+            "playlistItemData":{"videoId":"song-id"},
+            "flexColumns":[{"musicResponsiveListItemFlexColumnRenderer":{"text":{"runs":[{"text":"Song title"}]}}}]
+        }}"""
+        val response = decode("""{"responseContext":{},"contents":{"sectionListRenderer":{
+            "contents":[$header,{"musicPlaylistShelfRenderer":{"playlistId":"OLAK-test","contents":[$track]}}]
+        }}}""")
+
+        val song = AlbumMapper.parseAlbum(response, "MPRE-test").songs.single()
+        assertEquals("song-id", song.id)
+        assertEquals(null, song.duration)
+    }
+
+    @Test
     fun `legacy header reads list query parameter and keeps every artist`() {
         val response = decode("""{"responseContext":{},
             "microformat":{"microformatDataRenderer":{"urlCanonical":"https://music.youtube.com/playlist?list=OLAK-test&feature=share"}},
