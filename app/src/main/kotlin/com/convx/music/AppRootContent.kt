@@ -1043,27 +1043,24 @@ internal fun AppRootContent(
                                 }
 
                             if (playerMediaMetadata != null && !searchKeyboardActive) {
-                                Box(
+                                BoxWithConstraints(
                                     Modifier.fillMaxSize().padding(start = sideBarContentInset),
                                 ) {
-                                    Box(
-                                        Modifier.align(Alignment.BottomCenter)
+                                    AppFloatingNowPlayingPill(
+                                        modifier = Modifier.align(Alignment.BottomCenter)
                                             .windowInsetsPadding(windowsInsets.only(WindowInsetsSides.Bottom))
                                             .padding(bottom = 12.dp),
-                                    ) {
-                                        AppFloatingNowPlayingPill(
-                                            onClick = { playerBottomSheetState.expandSoft() },
-                                            onLyricsClick = {
-                                                playerBottomSheetState.expandSoft()
-                                                playerConnection?.requestShowLyrics?.value = true
-                                            },
-                                            onQueueClick = {
-                                                playerBottomSheetState.expandSoft()
-                                                playerConnection?.requestShowQueue?.value = true
-                                            },
-                                            pureBlack = pureBlack,
-                                        )
-                                    }
+                                        onClick = { playerBottomSheetState.expandSoft() },
+                                        onLyricsClick = {
+                                            playerBottomSheetState.expandSoft()
+                                            playerConnection?.requestShowLyrics?.value = true
+                                        },
+                                        onQueueClick = {
+                                            playerBottomSheetState.expandSoft()
+                                            playerConnection?.requestShowQueue?.value = true
+                                        },
+                                        pureBlack = pureBlack,
+                                    )
                                 }
                             }
                         }
