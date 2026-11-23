@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.items
+import com.convx.music.db.entities.Playlist
+import com.convx.music.db.entities.PlaylistEntity
+import com.convx.music.ui.component.PlaylistGridItem
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -29,7 +30,6 @@ import com.convx.music.ui.ios.compat.AppTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.SnackbarHostState
-import com.convx.music.ui.ios.compat.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -37,8 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalContext
@@ -48,15 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
-import com.convx.music.ui.component.rememberHomeCardShape
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalPlayerAwareWindowInsets
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.ui.component.HomeImageBackground
 import com.convx.music.ui.component.LocalMenuState
-import com.convx.music.ui.component.SymbolIcon
-import com.convx.music.ui.component.sf
 import com.convx.music.ui.component.NavigationTitle
 import com.convx.music.viewmodels.NewReleaseViewModel
 import com.convx.music.ui.component.rememberAppBackgroundColor
@@ -185,32 +180,68 @@ fun HomeScreen(
                         bottom = insets.calculateBottomPadding() + 24.dp,
                     ),
                 ) {
-                    item(key = "home_library") {
+                    item(key = "home_library_title") {
                         NavigationTitle(title = stringResource(R.string.filter_library))
+                    }
+                    item(key = "home_library_playlists") {
+                        val likedTitle = stringResource(R.string.liked)
+                        val liked = remember(likedTitle) {
+                            Playlist(
+                                playlist = PlaylistEntity(id = "liked", name = likedTitle),
+                                songCount = 0,
+                                songThumbnails = emptyList(),
+                            )
+                        }
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp),
                         ) {
                             item("liked") {
-                                HomeLibraryShortcut(stringResource(R.string.liked), "star.fill") {
-                                    navController.navigate("auto_playlist/liked")
-                                }
+                                PlaylistGridItem(
+                                    playlist = liked,
+                                    modifier = Modifier.width(142.dp).clickable {
+                                        navController.navigate("auto_playlist/liked")
+                                    },
+                                    autoPlaylist = true,
+                                    sharedArtworkId = "liked",
+                                    badges = {},
+                                    fillMaxWidth = true,
+                                    showIconOnly = true,
+                                )
                             }
-                            playlists.asReversed().take(6).forEach { playlist ->
-                                item("playlist_" + playlist.id) {
-                                    HomeLibraryShortcut(playlist.title, "music.note.list") {
+                            items(playlists.asReversed(), key = { "playlist_" + it.id }) { playlist ->
+                                PlaylistGridItem(
+                                    playlist = playlist,
+                                    modifier = Modifier.width(142.dp).clickable {
                                         navController.navigate("local_playlist/" + playlist.id)
-                                    }
-                                }
+                                    },
+                                    badges = {},
+                                    fillMaxWidth = true,
+                                )
                             }
-                            item("all_playlists") {
-                                HomeLibraryShortcut(stringResource(R.string.playlists), "music.note.square.stack.fill") {
-                                    navController.navigate(Screens.Library.route)
+                        }
+                    }
+                    if (recentSongs.isNotEmpty()) {
+                        item(key = "recently_played_title") {
+                            NavigationTitle(title = stringResource(R.string.home_recently_played))
+                        }
+                        item(key = "recently_played") {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                            ) {
+                                items(recentSongs, key = { it.id }) { song ->
+                                    HomeShelfCardBody(
+                                        thumbnailUrl = song.song.thumbnailUrl,
+                                        title = song.song.title,
+                                        subtitle = "",
+                                        artworkId = song.album?.id,
+                                        modifier = Modifier.clickable { itemHandlers.onLocalItemClick(song) },
+                                    )
                                 }
                             }
                         }
                     }
-                    localSongShelf(deps, "recently_played", R.string.home_recently_played, recentSongs)
                     topSongsSection(deps, home.topSongs, mediaMetadata, isPlaying)
                     figmaRail(deps, mediaMetadata, isPlaying, "new_albums", newReleaseTitle, "new_release", releases.take(12))
                     home.similarRecommendations.orEmpty().take(MaxSimilarSections).forEachIndexed { index, _ ->
@@ -219,22 +250,5 @@ fun HomeScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun HomeLibraryShortcut(title: String, symbol: String, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .width(156.dp)
-            .clip(rememberHomeCardShape())
-            .background(AppTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-    ) {
-        SymbolIcon(symbol = sf(symbol), size = 19.dp, contentDescription = null)
-        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

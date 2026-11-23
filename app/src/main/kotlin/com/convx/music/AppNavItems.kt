@@ -10,6 +10,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import com.convx.music.constants.ListenTogetherInTopBarKey
 import com.convx.music.constants.LocalOnlyModeKey
+import com.convx.music.constants.DefaultHiddenNavigationRoutes
 import com.convx.music.constants.HiddenNavigationRoutesKey
 import com.convx.music.ui.screens.Screens
 import com.convx.music.utils.rememberPreference
@@ -31,7 +32,7 @@ fun rememberAppNavItems(): AppNavItems {
     val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = true)
     // Read once here because both navigation bars use this preference.
     val (localOnlyMode) = rememberPreference(LocalOnlyModeKey, false)
-    val (hiddenNavigationRoutes) = rememberPreference(HiddenNavigationRoutesKey, "")
+    val (hiddenNavigationRoutes) = rememberPreference(HiddenNavigationRoutesKey, DefaultHiddenNavigationRoutes)
     val hiddenRoutes = remember(hiddenNavigationRoutes) {
         hiddenNavigationRoutes.lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
     }

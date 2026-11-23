@@ -62,6 +62,7 @@ import com.convx.music.constants.GridItemSize
 import com.convx.music.constants.GridItemsSizeKey
 import com.convx.music.constants.GridSpacingKey
 import com.convx.music.constants.HideHomeFavoriteIconKey
+import com.convx.music.constants.DefaultHiddenNavigationRoutes
 import com.convx.music.constants.HiddenNavigationRoutesKey
 import com.convx.music.constants.HidePlayerThumbnailKey
 import com.convx.music.constants.HomeCardCornerRadiusOverrideKey
@@ -129,7 +130,7 @@ fun AppearanceAdvancedSettings(
     }
 
     val (iosOverscroll, onIosOverscrollChange) = rememberPreference(IosOverscrollKey, defaultValue = true)
-    val (hiddenNavigationRoutes, onHiddenNavigationRoutesChange) = rememberPreference(HiddenNavigationRoutesKey, "")
+    val (hiddenNavigationRoutes, onHiddenNavigationRoutesChange) = rememberPreference(HiddenNavigationRoutesKey, DefaultHiddenNavigationRoutes)
     val hiddenTabs = remember(hiddenNavigationRoutes) {
         hiddenNavigationRoutes.lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
     }

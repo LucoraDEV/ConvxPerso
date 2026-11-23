@@ -408,16 +408,18 @@ internal fun HomeShelfCardBody(
             overflow = TextOverflow.Ellipsis,
             modifier = if (artworkId != null) Modifier.sharedTitleSource(title) else Modifier,
         )
-        Text(
-            text = subtitle,
-            style = AppTheme.typography.bodySmall,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            letterSpacing = (-0.23).sp,
-            color = AppTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (subtitle.isNotBlank()) {
+            Text(
+                text = subtitle,
+                style = AppTheme.typography.bodySmall,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
+                letterSpacing = (-0.23).sp,
+                color = AppTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
     }
 }

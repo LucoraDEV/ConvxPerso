@@ -153,7 +153,7 @@ fun AppFloatingNavBar(
         tabContextMenu = tabContextMenu,
         searchModeActive = navSearch.visualActive,
         navSearch = navSearch,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     )
     }
 }

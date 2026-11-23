@@ -322,7 +322,7 @@ fun OnlineSearchResult(
                 .fillMaxSize()
                 .windowInsetsPadding(appTopBarWindowInsets())
         ) {
-            com.convx.music.ui.component.NavBarSearchInputBar(navSearch, pureBlack, Modifier.fillMaxWidth())
+            SearchInputField(navSearch)
 
             Box(modifier = Modifier.weight(1f)) {
                 Column(

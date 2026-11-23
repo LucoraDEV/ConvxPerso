@@ -128,7 +128,6 @@ import com.convx.music.ui.component.rememberHeroTint
 import com.convx.music.ui.theme.AppleTokens
 import com.convx.music.ui.theme.HeroTintedContent
 
-import com.convx.music.ui.component.NavBarSearchInputBar
 import com.convx.music.ui.component.LocalNavSearchState
 import com.convx.music.ui.component.shapes.ContinuousRoundedRectangle
 import com.convx.music.ui.component.backdrop.backdrops.layerBackdrop
@@ -218,7 +217,7 @@ fun SearchScreen(
             .padding(start = sideInset, top = titleTop),
     ) {
         AppleSearchHeader(accountImageUrl, accountName, onAccountClick)
-        NavBarSearchInputBar(navSearch, pureBlack, Modifier.fillMaxWidth())
+        SearchInputField(navSearch)
         Spacer(Modifier.height(8.dp))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (searching) {
