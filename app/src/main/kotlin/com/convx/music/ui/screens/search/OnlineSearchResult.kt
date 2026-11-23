@@ -322,7 +322,7 @@ fun OnlineSearchResult(
                 .fillMaxSize()
                 .windowInsetsPadding(appTopBarWindowInsets())
         ) {
-            // Search input is owned by the persistent floating nav bar.
+            com.convx.music.ui.component.NavBarSearchInputBar(navSearch, pureBlack, Modifier.fillMaxWidth())
 
             Box(modifier = Modifier.weight(1f)) {
                 Column(

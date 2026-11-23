@@ -758,7 +758,7 @@ private fun PlayerV2Content(
         ) {
             IconButton(
                 onClick = playerConnection::toggleLike,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 LikeGlyphSwap(shownLike) { isLiked, songId ->
                     PlayerGlyph(
@@ -766,56 +766,14 @@ private fun PlayerV2Content(
                         fallback = if (isLiked) R.drawable.flamingo_favorited else R.drawable.flamingo_favorite,
                         // Show like state with the filled or outline glyph, not a color change.
                         tint = adaptivePrimary,
-                        modifier = Modifier.size(28.dp).likePop(isLiked, songId),
+                        modifier = Modifier.size(34.dp).likePop(isLiked, songId),
                         contentDescription = "Like",
                     )
                 }
             }
 
 
-            IconButton(
-                modifier = Modifier.size(40.dp),
-                // Keep the player visible by using a popover instead of a sheet.
-                onClick = { showV2Options = true }
-            ) {
-                mediaMetadata?.let {
-                    V2OptionsMenuHost(
-                        expanded = showV2Options,
-                        onDismiss = { showV2Options = false },
-                        mediaMetadata = it,
-                        isLiked = shownLike?.second == true,
-                        playerConnection = playerConnection,
-                        navController = navController,
-                        playerBottomSheetState = state,
-                        onViewCredits = {
-                            bottomSheetPageState.showFloating { ShowMediaInfo(it.id) }
-                        },
-                        onShareLyrics = { playerState = PlayerInternalState.LYRICS },
-                        onOpenSleepTimer = { sleepTimer.showDialog.value = true },
-                        onOpenAudioDevices = { showAudioDeviceBottomSheet = true },
-                        onMore = {
-                            menuState.show {
-                                PlayerMenu(
-                                    mediaMetadata = mediaMetadata,
-                                    navController = navController,
-                                    playerBottomSheetState = state,
-                                    onShowDetailsDialog = {
-                                        mediaMetadata?.id?.let { id -> bottomSheetPageState.showFloating { ShowMediaInfo(id) } }
-                                    },
-                                    onDismiss = menuState::dismiss
-                                )
-                            }
-                        },
-                    )
-                }
-                PlayerGlyph(
-                    slot = PlayerIconSlot.V2_MORE,
-                    fallback = R.drawable.flamingo_more,
-                    tint = adaptivePrimary,
-                    modifier = Modifier.size(28.dp),
-                    contentDescription = "Options",
-                )
-            }
+
         }
             }
         PlayerV2Frame(
@@ -838,40 +796,77 @@ private fun PlayerV2Content(
                     ) else Modifier
                 ),
             handle = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = if (isHeroLook && !videoActive) systemBarsTopPadding + 16.dp else 16.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // The song / video switch replaces the grab pill whenever a video exists for the track.
-                val videoSwitchEnabled by rememberPreference(com.convx.music.constants.ShowVideoSwitchKey, true)
-                val showVideoSwitch = canWatchVideo && videoSwitchEnabled && playerState == PlayerInternalState.COVER
-                if (!showVideoSwitch) Box(
-                    modifier = Modifier
-                        .width(54.dp)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(2.5.dp))
-                        .background(adaptivePrimary.copy(alpha = 0.3f))
-                        .clickable { state.collapseSoft() }
-                )
-                val partyViewModel: com.convx.music.viewmodels.JamViewModel = androidx.hilt.navigation.compose.hiltViewModel()
-                val party by partyViewModel.session.collectAsStateWithLifecycle()
-                party?.let { PartyChip(it.code, it.members.size, adaptivePrimary) { state.collapseSoft(); navController.navigate("listen_together/party") } }
-                if (showVideoSwitch) {
-                    SongVideoModeControl(watchVideo, adaptivePrimary) { selected ->
-                        if (selected && watchVideo && videoLookup is com.convx.music.playback.VideoStreamLookup.Unavailable) {
-                            mediaMetadata?.id?.let(playerConnection::requestVideoStream)
+                val topPadding = if (isHeroLook && !videoActive) systemBarsTopPadding else 0.dp
+                Box(Modifier.fillMaxWidth().padding(top = topPadding)) {
+                    Column(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp, bottom = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(54.dp)
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(2.5.dp))
+                                .background(adaptivePrimary.copy(alpha = 0.3f))
+                                .clickable { state.collapseSoft() },
+                        )
+                        val partyViewModel: com.convx.music.viewmodels.JamViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                        val party by partyViewModel.session.collectAsStateWithLifecycle()
+                        party?.let { session ->
+                            PartyChip(session.code, session.members.size, adaptivePrimary) {
+                                state.collapseSoft()
+                                navController.navigate("listen_together/party")
+                            }
                         }
-                        selectVideo(selected)
                     }
-                    if (watchVideo && videoLookup is com.convx.music.playback.VideoStreamLookup.Unavailable) {
-                        Text(stringResource(R.string.video_unavailable), color = adaptiveSecondary, fontSize = 12.sp)
+                    IconButton(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp).size(48.dp),
+                        // Keep the player visible by using a popover instead of a sheet.
+                        onClick = { showV2Options = true }
+                    ) {
+                        mediaMetadata?.let {
+                            V2OptionsMenuHost(
+                                expanded = showV2Options,
+                                onDismiss = { showV2Options = false },
+                                mediaMetadata = it,
+                                isLiked = shownLike?.second == true,
+                                playerConnection = playerConnection,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onViewCredits = {
+                                    bottomSheetPageState.showFloating { ShowMediaInfo(it.id) }
+                                },
+                                onShareLyrics = { playerState = PlayerInternalState.LYRICS },
+                                onOpenSleepTimer = { sleepTimer.showDialog.value = true },
+                                onOpenAudioDevices = { showAudioDeviceBottomSheet = true },
+                                videoActionLabel = if (canWatchVideo) {
+                                    stringResource(if (watchVideo) R.string.player_switch_to_song else R.string.player_switch_to_video)
+                                } else null,
+                                onSwitchVideo = { selectVideo(!watchVideo) },
+                                onMore = {
+                                    menuState.show {
+                                        PlayerMenu(
+                                            mediaMetadata = mediaMetadata,
+                                            navController = navController,
+                                            playerBottomSheetState = state,
+                                            onShowDetailsDialog = {
+                                                mediaMetadata?.id?.let { id -> bottomSheetPageState.showFloating { ShowMediaInfo(id) } }
+                                            },
+                                            onDismiss = menuState::dismiss
+                                        )
+                                    }
+                                },
+                            )
+                        }
+                        PlayerGlyph(
+                            slot = PlayerIconSlot.V2_MORE,
+                            fallback = R.drawable.flamingo_more,
+                            tint = adaptivePrimary,
+                            modifier = Modifier.size(32.dp),
+                            contentDescription = "Options",
+                        )
                     }
                 }
-                }
-            }
             },
             pane = { paneModifier ->
             Box(paneModifier.fillMaxSize()) {
@@ -1052,7 +1047,7 @@ private fun PlayerV2Content(
                                                 shadowPx = with(androidx.compose.ui.platform.LocalDensity.current) {
                                                     if (showPlayerThumbnailShadow) playerThumbnailShadowElevation.dp.toPx() else 0f
                                                 },
-                                                pauseShrinks = true,
+                                                pauseShrinks = false,
                                             ) else Modifier.fullArtworkMorphTarget(
                                                 cornerRadiusPx = 0f,
                                                 travels = false,
@@ -1079,38 +1074,8 @@ private fun PlayerV2Content(
                                                 )
                                             )
                                     ) {
-                                    // Hero Blend is edge-to-edge and full-screen from the top --
-                                    // shrinking it on pause would tear it away from that fixed
-                                    // frame, so only Squared's floating card does the pause-shrink.
-                                    val heroScale by animateFloatAsState(
-                                        // Use more damping on pause to avoid overshoot.
-                                        targetValue = if (isPlaying || isHeroLook) 1f else 0.729f,
-                                        animationSpec = spring(
-                                            dampingRatio = if (isPlaying || isHeroLook) 0.6f else 0.95f,
-                                            stiffness = 160f,
-                                        ),
-                                        label = "heroScale",
-                                    )
-                                    // Use the shared artwork morph for DJ crossfades and a short dissolve otherwise.
+                                    val heroScale = 1f
                                     val heroCrossfadeMs by playerConnection.crossfadeDurationMs.collectAsStateWithLifecycle()
-                                    // Publish the resting scale without recomposing this player on every animation frame.
-                                    androidx.compose.runtime.LaunchedEffect(Unit) {
-                                        snapshotFlow { heroScale }.collect {
-                                            if (!PlayerMorph.active) artworkRestScaleState.floatValue = it
-                                        }
-                                    }
-                                    // Re-apply the target after the sheet settles in case playback state lagged.
-                                    var heroWasUnsettled by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-                                    androidx.compose.runtime.LaunchedEffect(state.isExpanded, state.isCollapsed, state.isDragging) {
-                                        val settled = !state.isDragging && (state.isExpanded || state.isCollapsed)
-                                        if (!settled) {
-                                            heroWasUnsettled = true
-                                        } else if (heroWasUnsettled && !PlayerMorph.active) {
-                                            heroWasUnsettled = false
-                                            artworkRestScaleState.floatValue =
-                                                if (isHeroLook || playerConnection.player.playWhenReady) 1f else 0.729f
-                                        }
-                                    }
                                     // Bounds morph separately from scale, so animate scale on the
                                     // same curve to avoid a visible jump when opening a pane paused.
                                     val coverMorphFrac = this@AnimatedContent.transition.animateFloat(
@@ -1339,7 +1304,7 @@ private fun PlayerV2Content(
                                                     slot = if (isLiked) PlayerIconSlot.V2_LIKED else PlayerIconSlot.V2_LIKE,
                                                     fallback = if (isLiked) R.drawable.flamingo_favorited else R.drawable.flamingo_favorite,
                                                     tint = adaptivePrimary,
-                                                    modifier = Modifier.size(28.dp).likePop(isLiked, songId),
+                                                    modifier = Modifier.size(34.dp).likePop(isLiked, songId),
                                                     contentDescription = "Like",
                                                 )
                                             }

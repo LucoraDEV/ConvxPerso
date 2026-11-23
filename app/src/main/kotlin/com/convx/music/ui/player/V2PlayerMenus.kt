@@ -104,6 +104,8 @@ fun V2OptionsMenu(
     onMore: () -> Unit,
     onOpenSleepTimer: () -> Unit,
     onOpenAudioDevices: () -> Unit,
+    videoActionLabel: String? = null,
+    onSwitchVideo: () -> Unit = {},
 ) {
     V2MenuPopup(
         onDismiss = onDismiss,
@@ -131,6 +133,12 @@ fun V2OptionsMenu(
                 IosMenuItem(stringResource(R.string.v2_menu_add_to_playlist), icon = glyph(SfSymbols.Monochrome.SFTextBadgePlus), onClick = onAddToPlaylist),
             )),
             IosMenuSection(listOfNotNull(
+                videoActionLabel?.let { label ->
+                    IosMenuItem(label, icon = symbolGlyph(com.convx.music.ui.component.sf("video")), onClick = {
+                        onDismiss()
+                        onSwitchVideo()
+                    })
+                },
                 onCreateStation?.let {
                     IosMenuItem(stringResource(R.string.v2_menu_create_station), icon = glyph(SfSymbols.Monochrome.SFDotRadiowavesLeftAndRight), onClick = it)
                 },
@@ -201,6 +209,8 @@ fun V2OptionsMenuHost(
     onMore: () -> Unit,
     onOpenSleepTimer: () -> Unit,
     onOpenAudioDevices: () -> Unit,
+    videoActionLabel: String? = null,
+    onSwitchVideo: () -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val database = com.convx.music.LocalDatabase.current.get()
@@ -233,6 +243,8 @@ fun V2OptionsMenuHost(
             onMore = onMore,
             onOpenSleepTimer = onOpenSleepTimer,
             onOpenAudioDevices = onOpenAudioDevices,
+            videoActionLabel = videoActionLabel,
+            onSwitchVideo = onSwitchVideo,
         )
     }
     if (showGoTo) {

@@ -133,7 +133,6 @@ import com.convx.music.ui.component.LocalMenuState
 import com.convx.music.ui.component.LocalNavSearchState
 import com.convx.music.ui.component.LocalPooledGlass
 import com.convx.music.ui.component.LocalSheetPresentation
-import com.convx.music.ui.component.NavBarSearchInputBar
 import com.convx.music.ui.component.OverlayMenu
 import com.convx.music.ui.component.PooledGlass
 import com.convx.music.ui.component.QueueConflictDialog
@@ -729,7 +728,7 @@ internal fun AppRootContent(
             val iosOverscrollFactory = rememberIosOverscrollFactory()
 
             val enterSearch = search.enterSearch
-            val navSearchState = search.navSearchState(inSearchScreen, inSearchInputScreen, navController)
+            val navSearchState = search.navSearchState(inSearchScreen)
 
             // Counts the sheets currently on screen, so the presentation below holds
             // until the last one closes rather than the first. Every sheet registers
@@ -1043,63 +1042,27 @@ internal fun AppRootContent(
                                     }
                                 }
 
-                            // In rail mode, dock the mini player at the right edge.
-                            // Show the search field there while the user is searching.
-                            if (playerMediaMetadata != null || inSearchScreen) {
-                                // Center in the remaining content area after the sidebar inset.
-                                BoxWithConstraints(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .padding(start = sideBarContentInset),
+                            if (playerMediaMetadata != null && !searchKeyboardActive) {
+                                Box(
+                                    Modifier.fillMaxSize().padding(start = sideBarContentInset),
                                 ) {
-                                    val pillWidth = maxWidth * FloatingMiniPlayerWidthFraction
-                                    AnimatedContent(
-                                        targetState = inSearchScreen,
-                                        transitionSpec = {
-                                            if (targetState) {
-                                                (slideInVertically(
-                                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-                                                ) { it / 2 } + fadeIn()) togetherWith
-                                                    (slideOutVertically(
-                                                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-                                                    ) { it } + fadeOut())
-                                            } else {
-                                                (slideInVertically(
-                                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-                                                ) { it } + fadeIn()) togetherWith
-                                                    (slideOutVertically(
-                                                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-                                                    ) { it / 2 } + fadeOut())
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .windowInsetsPadding(
-                                                windowsInsets.only(WindowInsetsSides.Bottom)
-                                            )
+                                    Box(
+                                        Modifier.align(Alignment.BottomCenter)
+                                            .windowInsetsPadding(windowsInsets.only(WindowInsetsSides.Bottom))
                                             .padding(bottom = 12.dp),
-                                        label = "tabViewSearchPill",
-                                    ) { searching ->
-                                        if (searching) {
-                                            NavBarSearchInputBar(
-                                                state = navSearchState,
-                                                pureBlack = pureBlack,
-                                                modifier = Modifier.width(pillWidth),
-                                            )
-                                        } else if (playerMediaMetadata != null) {
-                                            AppFloatingNowPlayingPill(
-                                                onClick = { playerBottomSheetState.expandSoft() },
-                                                onLyricsClick = {
-                                                    playerBottomSheetState.expandSoft()
-                                                    playerConnection?.requestShowLyrics?.value = true
-                                                },
-                                                onQueueClick = {
-                                                    playerBottomSheetState.expandSoft()
-                                                    playerConnection?.requestShowQueue?.value = true
-                                                },
-                                                pureBlack = pureBlack,
-                                            )
-                                        }
+                                    ) {
+                                        AppFloatingNowPlayingPill(
+                                            onClick = { playerBottomSheetState.expandSoft() },
+                                            onLyricsClick = {
+                                                playerBottomSheetState.expandSoft()
+                                                playerConnection?.requestShowLyrics?.value = true
+                                            },
+                                            onQueueClick = {
+                                                playerBottomSheetState.expandSoft()
+                                                playerConnection?.requestShowQueue?.value = true
+                                            },
+                                            pureBlack = pureBlack,
+                                        )
                                     }
                                 }
                             }

@@ -746,6 +746,9 @@
     <string name="transition_off">Désactivé</string>
     <string name="no_playlists">Aucune playlist</string>
     <string name="playlist_load_failed">Impossible de charger cette playlist.</string>
+    <string name="home_recently_played">Écoutés récemment</string>
+    <string name="player_switch_to_video">Passer à la vidéo</string>
+    <string name="player_switch_to_song">Revenir au morceau</string>
 </resources>
 
 

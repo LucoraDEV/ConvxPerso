@@ -129,10 +129,11 @@ fun AppleSearchBrowse(
     navController: NavController,
     contentPadding: PaddingValues,
     header: @Composable () -> Unit,
-    viewModel: AppleSearchViewModel = hiltViewModel(),
+    showCategories: Boolean = true,
+    viewModel: AppleSearchViewModel? = if (showCategories) hiltViewModel() else null,
 ) {
-    val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val art by viewModel.art.collectAsStateWithLifecycle()
+    val categories = viewModel?.categories?.collectAsStateWithLifecycle()?.value.orEmpty()
+    val art = viewModel?.art?.collectAsStateWithLifecycle()?.value.orEmpty()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Two columns on phone; keep tiles near their reference width in the iPad pane.
@@ -153,8 +154,8 @@ fun AppleSearchBrowse(
             item(key = "header", span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
                 header()
             }
-            items(categories.orEmpty(), key = { it.key }, contentType = { "tile" }) { item ->
-                LaunchedEffect(item.key) { viewModel.loadArt(item) }
+            items(categories, key = { it.key }, contentType = { "tile" }) { item ->
+                LaunchedEffect(item.key) { viewModel?.loadArt(item) }
                 CategoryTile(
                     title = item.title,
                     color = Color(item.stripeColor),

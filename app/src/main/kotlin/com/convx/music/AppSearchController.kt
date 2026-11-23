@@ -53,11 +53,7 @@ class AppSearchController(
     val enterSearch: () -> Unit,
     val exitSearch: () -> Unit,
 ) {
-    fun navSearchState(
-        inSearchScreen: Boolean,
-        inSearchInputScreen: Boolean,
-        navController: NavHostController,
-    ): NavSearchState = NavSearchState(
+    fun navSearchState(inSearchScreen: Boolean): NavSearchState = NavSearchState(
         visualActive = visualOverride.value ?: inSearchScreen,
         keyboardActive = keyboardActive.value,
         query = query.value,
@@ -70,13 +66,7 @@ class AppSearchController(
         },
         canToggleSource = canToggleSource,
         onTapSearchIcon = enterSearch,
-        onTapBar = {
-            if (inSearchScreen && !inSearchInputScreen) {
-                // Return to the search input before reopening the keyboard from results.
-                navController.popBackStack(Screens.Search.route, inclusive = false)
-            }
-            keyboardActive.value = true
-        },
+        onTapBar = { keyboardActive.value = true },
         onExit = exitSearch,
         onCloseKeyboard = { keyboardActive.value = false },
         focusRequester = focusRequester,

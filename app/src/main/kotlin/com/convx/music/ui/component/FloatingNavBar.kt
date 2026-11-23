@@ -139,53 +139,22 @@ fun AppFloatingNavBar(
     // Plain chrome: the old backdrop-pixel sampler flipped the bar between light and dark while scrolling.
     androidx.compose.runtime.CompositionLocalProvider(LocalSampledChromeDark provides (if (com.convx.music.ui.theme.LocalForcedDark.current) true else null)) {
 
-    AnimatedContent(
-        targetState = navSearch.keyboardActive,
-        modifier = modifier,
-        transitionSpec = {
-            if (targetState) {
-                (slideInVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-                ) { it / 2 } + fadeIn()) togetherWith
-                    (slideOutVertically(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-                    ) { it } + fadeOut())
-            } else {
-                (slideInVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-                ) { it } + fadeIn()) togetherWith
-                    (slideOutVertically(
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-                    ) { it / 2 } + fadeOut())
-            }
-        },
-        label = "navBarKeyboardActive",
-    ) { keyboardActive ->
-        if (keyboardActive) {
-            NavBarSearchInputBar(
-                state = navSearch,
-                pureBlack = pureBlack,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            AppFloatingNavBarChrome(
-                navigationItems = navigationItems,
-                currentRoute = currentRoute,
-                onItemClick = onItemClick,
-                scrollConnection = scrollConnection,
-                pureBlack = pureBlack,
-                showPlayerAccessory = showPlayerAccessory,
-                onAccessoryClick = onAccessoryClick,
-                onAccessoryLyricsClick = onAccessoryLyricsClick,
-                onAccessoryQueueClick = onAccessoryQueueClick,
-                onAccessoryLongClick = onAccessoryLongClick,
-                tabContextMenu = tabContextMenu,
-                searchModeActive = navSearch.visualActive,
-                navSearch = navSearch,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
+    AppFloatingNavBarChrome(
+        navigationItems = navigationItems,
+        currentRoute = currentRoute,
+        onItemClick = onItemClick,
+        scrollConnection = scrollConnection,
+        pureBlack = pureBlack,
+        showPlayerAccessory = showPlayerAccessory,
+        onAccessoryClick = onAccessoryClick,
+        onAccessoryLyricsClick = onAccessoryLyricsClick,
+        onAccessoryQueueClick = onAccessoryQueueClick,
+        onAccessoryLongClick = onAccessoryLongClick,
+        tabContextMenu = tabContextMenu,
+        searchModeActive = navSearch.visualActive,
+        navSearch = navSearch,
+        modifier = Modifier.fillMaxWidth(),
+    )
     }
 }
 
@@ -209,7 +178,7 @@ private fun AppFloatingNavBarChrome(
     // System back while search-expanded/search-inline (keyboard not active yet,
     // that state has its own BackHandler in NavBarSearchInputBar) -> same
     // animate-then-navigate exit as the bar's own back arrow / icon tap.
-    BackHandler(enabled = searchModeActive, onBack = navSearch.onExit)
+    BackHandler(enabled = searchModeActive && !navSearch.keyboardActive, onBack = navSearch.onExit)
 
     val glassConfig = LocalGlassEffectConfig.current
     val useGlass = glassConfig.isEnabledFor(GlassComponent.NAV_BAR) && isGlassAllowed()
@@ -263,7 +232,8 @@ private fun AppFloatingNavBarChrome(
     val tabScreens = remember(navigationItems) { navigationItems.filter { it != Screens.Search } }
 
     // Search is not a content tab; detail routes keep the indicator on the last tab.
-    val selectedTabKey = rememberStickySelectedRoute(currentRoute, tabScreens)
+    val lastTabKey = rememberStickySelectedRoute(currentRoute, tabScreens)
+    val selectedTabKey = if (searchModeActive) Screens.Search.route else lastTabKey
 
     val accessoryContentColor = when {
         appTextColorInt != 0 -> Color(appTextColorInt)
@@ -319,7 +289,7 @@ private fun AppFloatingNavBarChrome(
         elevations = FloatingTabBarDefaults.elevations(),
         modifier = modifier,
         accessory = playerAccessory,
-        searchMode = searchModeActive,
+        searchMode = false,
         searchBarContent = { contentModifier ->
             SearchBarPlaceholder(
                 state = navSearch,
@@ -397,7 +367,6 @@ private fun AppFloatingNavBarChrome(
                 onClick = {
                     when {
                         screen == Screens.Search -> if (searchModeActive) navSearch.onTapBar() else navSearch.onTapSearchIcon()
-                        searchModeActive -> navSearch.onExit()
                         else -> onItemClick(screen, isRouteSelected(currentRoute, screen.route, navigationItems))
                     }
                 },
@@ -539,25 +508,31 @@ fun NavBarSearchInputBar(
     // rather than exiting search entirely — the visible back arrow does that.
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    BackHandler {
+    BackHandler(enabled = state.keyboardActive) {
         focusManager.clearFocus()
         keyboardController?.hide()
         state.onCloseKeyboard()
     }
 
-    // Let the mini player/icon finish sliding down and out (the AnimatedContent
-    // transition in AppFloatingNavBar) before pulling the keyboard up — opening
-    // it immediately made the two animations fight for the same screen space.
-    LaunchedEffect(Unit) {
-        delay(KeyboardOpenDelayMs)
-        state.focusRequester.requestFocus()
+    LaunchedEffect(state.keyboardActive) {
+        if (state.keyboardActive) {
+            state.focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    val submit = {
+        if (state.query.text.isNotBlank()) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            state.onCloseKeyboard()
+            state.onSubmit(state.query.text.trim())
+        }
     }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .imePadding()
-            .navigationBarsPadding()
             // Tight above the keyboard (top-only breathing room) rather than
             // padded on both sides — it should read as docked to the keyboard,
             // not floating with a gap above it.
@@ -610,9 +585,9 @@ fun NavBarSearchInputBar(
                 // (or don't reliably report it at all) — handle every plausible
                 // submit action so the button always does something.
                 keyboardActions = KeyboardActions(
-                    onSearch = { state.onSubmit(state.query.text) },
-                    onDone = { state.onSubmit(state.query.text) },
-                    onGo = { state.onSubmit(state.query.text) },
+                    onSearch = { submit() },
+                    onDone = { submit() },
+                    onGo = { submit() },
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -628,7 +603,7 @@ fun NavBarSearchInputBar(
                     // a suggestion.
                     .onKeyEvent {
                         if (it.key == Key.Enter) {
-                            state.onSubmit(state.query.text)
+                            submit()
                             true
                         } else {
                             false

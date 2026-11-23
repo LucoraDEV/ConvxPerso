@@ -426,7 +426,7 @@ fun AlbumScreen(
                 com.convx.music.ui.component.CollectionDetailHeader(
                     title = title,
                     subtitle = title,
-                    artwork = bgUrl ?: appleAlbum?.sized(1200),
+                    artwork = bgUrl?.resize(1200, 1200) ?: appleAlbum?.sized(1200),
                     metadata = albumInfo,
                     description = description,
                     descriptionRuns = descriptionRuns?.map { LinkSegment(it.text, it.navigationEndpoint?.urlEndpoint?.url) },
@@ -660,7 +660,7 @@ fun AlbumScreen(
             item(key = "shimmer_header", contentType = "header") {
                 com.convx.music.ui.component.CollectionDetailHeader(
                     title = com.convx.music.ui.utils.selectedArtworkTitle().orEmpty(),
-                    artwork = bgUrl,
+                    artwork = bgUrl?.resize(1200, 1200),
                     metadata = "",
                     foreground = onTint,
                     playing = false,

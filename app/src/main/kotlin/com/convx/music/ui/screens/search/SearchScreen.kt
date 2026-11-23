@@ -128,6 +128,7 @@ import com.convx.music.ui.component.rememberHeroTint
 import com.convx.music.ui.theme.AppleTokens
 import com.convx.music.ui.theme.HeroTintedContent
 
+import com.convx.music.ui.component.NavBarSearchInputBar
 import com.convx.music.ui.component.LocalNavSearchState
 import com.convx.music.ui.component.shapes.ContinuousRoundedRectangle
 import com.convx.music.ui.component.backdrop.backdrops.layerBackdrop
@@ -168,10 +169,12 @@ fun SearchScreen(
 
     val localOnly = com.convx.music.LocalLocalOnlyMode.current
 
-    val onSearchFromSuggestion: (String) -> Unit = remember {
+    val onSearchFromSuggestion: (String) -> Unit = remember(pauseSearchHistory, navSearch.onCloseKeyboard) {
         { searchQuery ->
             if (searchQuery.isNotEmpty()) {
                 focusManager.clearFocus()
+                keyboardController?.hide()
+                navSearch.onCloseKeyboard()
                 when (val parsedUrl = YouTubeUrlParser.parse(searchQuery)) {
                     is YouTubeUrlParser.ParsedUrl.Video -> {
                         playerConnection?.playQueue(
@@ -206,66 +209,66 @@ fun SearchScreen(
     val sideInset = LocalPlayerAwareWindowInsets.current
         .asPaddingValues()
         .calculateStartPadding(LocalLayoutDirection.current)
-    val searching = navSearch.keyboardActive || navSearch.query.text.isNotEmpty() || localOnly
+    val searching = navSearch.query.text.isNotEmpty()
+    val recentSearches by remember(database) { database.searchHistory() }
+        .collectAsStateWithLifecycle(emptyList())
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(colors.systemBackground),
+    Column(
+        Modifier.fillMaxSize().background(colors.systemBackground)
+            .padding(start = sideInset, top = titleTop),
     ) {
-        if (!searching) {
-            // Frosted strip under the status bar once tiles scroll up into it.
-            val browseHaze = remember { HazeState() }
-            Box(Modifier.fillMaxSize().hazeSource(browseHaze)) {
-                AppleSearchBrowse(
-                    navController = navController,
-                    contentPadding = PaddingValues(start = sideInset, top = titleTop, bottom = bottomPadding + 16.dp),
-                    header = { AppleSearchHeader(accountImageUrl, accountName, onAccountClick,
-                        horizontalInset = 0.dp, bottomInset = 2.dp) },
-                )
-            }
-            TopFadeBlur(
-                hazeState = browseHaze,
-                pageColor = colors.systemBackground,
-                modifier = Modifier.align(Alignment.TopCenter),
-                heightOverride = titleTop + 16.dp,
-            )
-        } else {
-            val pageColor = colors.systemBackground
-            val searchBackdrop = com.convx.music.ui.component.backdrop.backdrops.rememberLayerBackdrop(
-                onDraw = remember(pageColor) { { drawRect(pageColor); drawContent() } },
-            )
-            val focusedTop = if (tabletLayout) statusTop + 10.dp else maxOf(statusTop, 58.dp)
-            Column(Modifier.fillMaxSize().padding(top = focusedTop)) {
-                if (navSearch.canToggleSource) {
-                    SourceSwitch(
-                        source = navSearch.searchSource,
-                        onSelect = { if (it != navSearch.searchSource) navSearch.onToggleSource() },
-                        backdrop = searchBackdrop,
-                        modifier = Modifier.padding(start = sideInset + 16.dp, end = 16.dp),
+        AppleSearchHeader(accountImageUrl, accountName, onAccountClick)
+        NavBarSearchInputBar(navSearch, pureBlack, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            if (searching) {
+                when (navSearch.searchSource) {
+                    SearchSource.LOCAL -> LocalSearchScreen(
+                        query = navSearch.query.text,
+                        navController = navController,
+                        onDismiss = {},
+                        pureBlack = pureBlack,
+                    )
+                    SearchSource.ONLINE -> OnlineSearchScreen(
+                        query = navSearch.query.text,
+                        onQueryChange = navSearch.onQueryChange,
+                        navController = navController,
+                        onSearch = onSearchFromSuggestion,
+                        onDismiss = {},
+                        pureBlack = pureBlack,
+                        contentColor = colors.label,
+                        referenceHistory = true,
                     )
                 }
-                Box(Modifier.weight(1f)
-                    .layerBackdrop(searchBackdrop)) {
-                    when (navSearch.searchSource) {
-                        SearchSource.LOCAL -> LocalSearchScreen(
-                            query = navSearch.query.text,
-                            navController = navController,
-                            onDismiss = { },
-                            pureBlack = pureBlack
-                        )
-                        SearchSource.ONLINE -> OnlineSearchScreen(
-                            query = navSearch.query.text,
-                            onQueryChange = navSearch.onQueryChange,
-                            navController = navController,
-                            onSearch = { onSearchFromSuggestion(it) },
-                            onDismiss = { },
-                            pureBlack = pureBlack,
-                            contentColor = colors.label,
-                            referenceHistory = true,
-                        )
-                    }
-                }
+            } else {
+                AppleSearchBrowse(
+                    navController = navController,
+                    contentPadding = PaddingValues(bottom = bottomPadding + 16.dp),
+                    showCategories = !localOnly,
+                    header = {
+                        if (recentSearches.isNotEmpty()) {
+                            Column {
+                                NavigationTitle(title = stringResource(R.string.search_history))
+                                recentSearches.distinctBy { it.query }.take(5).forEach { recent ->
+                                    Text(
+                                        text = recent.query,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clickable {
+                                                if (localOnly) {
+                                                    navSearch.onQueryChange(androidx.compose.ui.text.input.TextFieldValue(recent.query))
+                                                } else {
+                                                    onSearchFromSuggestion(recent.query)
+                                                }
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    )
+                                }
+                            }
+                        }
+                    },
+                )
             }
         }
     }

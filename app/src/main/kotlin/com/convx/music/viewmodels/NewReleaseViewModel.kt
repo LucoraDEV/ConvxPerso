@@ -64,11 +64,10 @@ constructor(
 
                         albums
                             .map { album ->
-                                val rank = album.artists.orEmpty().firstNotNullOfOrNull { artist ->
-                                    artist.id?.let { artistId ->
-                                        favouriteArtistRanks[artistId] ?: artistRanks[artistId]
-                                    }
-                                } ?: Int.MAX_VALUE
+                                val artistIds = album.artists.orEmpty().mapNotNull { it.id }
+                                val rank = artistIds.mapNotNull(favouriteArtistRanks::get).minOrNull()
+                                    ?: artistIds.mapNotNull(artistRanks::get).minOrNull()?.let { it + favouriteIndex }
+                                    ?: Int.MAX_VALUE
                                 album to rank
                             }
                             .sortedBy { it.second }

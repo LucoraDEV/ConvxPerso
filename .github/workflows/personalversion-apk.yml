@@ -3,8 +3,6 @@ name: PersonalVersion Android APK
 on:
   push:
     branches: [codex/fix-albums]
-    paths:
-      - .github/workflows/personalversion-apk.yml
   workflow_dispatch:
 
 permissions:
@@ -59,5 +57,5 @@ jobs:
           else
             gh release create "$tag" PersonalVersion-android.apk --target "$GITHUB_SHA" \
               --title "PersonalVersion Android" \
-              --notes "Version Android 64 bits de Convx avec le correctif de chargement des albums et des pochettes. APK de test signé en mode debug, installable à côté de Convx officiel."
+              --notes "Version Android 64 bits de PersonalVersion. APK de test signé en mode debug, installable à côté de Convx officiel."
           fi
