@@ -1,0 +1,59 @@
+name: PersonalVersion Android APK
+
+on:
+  push:
+    branches: [codex/fix-albums]
+    paths:
+      - .github/workflows/personalversion-apk.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-37' 'platforms;android-36' 'ndk;27.0.12077973'
+
+      - uses: ./.github/actions/setup-fftw
+
+      - name: Build signed Android APK
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          bash ./gradlew :app:assembleUniversalGmsDebug --no-configuration-cache --console=plain
+
+      - name: Publish APK on GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/universalGms/debug/*.apk)
+          test "${#apks[@]}" -eq 1
+          cp "${apks[0]}" PersonalVersion-android.apk
+          tag="personalversion-android-${GITHUB_SHA:0:8}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" PersonalVersion-android.apk --clobber
+          else
+            gh release create "$tag" PersonalVersion-android.apk --target "$GITHUB_SHA" \
+              --title "PersonalVersion Android" \
+              --notes "Version Android 64 bits de Convx avec le correctif de chargement des albums et des pochettes. APK de test signé en mode debug, installable à côté de Convx officiel."
+          fi
