@@ -34,8 +34,6 @@ jobs:
       - name: Install Android build tools
         run: sdkmanager 'platforms;android-37.0' 'platforms;android-36' 'ndk;27.0.12077973'
 
-      - uses: ./.github/actions/setup-fftw
-
       - name: Build signed Android APK
         run: |
           mkdir -p ~/.android
